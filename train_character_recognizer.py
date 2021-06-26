@@ -67,7 +67,7 @@ def net_layer(inputs,
 
 
 def dense_net(input_shape, depth, num_classes=10, k=1):
-    filters = 16
+    filters = 32
 
     inputs = Input(shape=input_shape)
     x = net_layer(inputs=inputs, conv_first=True, num_filters=filters)
@@ -108,8 +108,6 @@ def dense_net(input_shape, depth, num_classes=10, k=1):
 
     model = Model(inputs=inputs, outputs=outputs)
 
-#     plot_model(model, to_file='dense_net_graph.png')
-
     return model
 
 
@@ -123,16 +121,16 @@ input_shape = (71,71, 1)
 
 
 
-# model = dense_net(input_shape=input_shape, num_classes=num_classes, depth=3, k=4)
+model = dense_net(input_shape=input_shape, num_classes=num_classes, depth=3, k=5)
 
-model = keras.applications.Xception(
-    include_top=True,
-    weights=None,
-    input_tensor=None,
-    input_shape=input_shape,
-    pooling=None,
-    classes=num_classes,
-)
+# model = keras.applications.Xception(
+#     include_top=True,
+#     weights=None,
+#     input_tensor=None,
+#     input_shape=input_shape,
+#     pooling=None,
+#     classes=num_classes,
+# )
 
 model.summary()
 
@@ -166,13 +164,16 @@ y_train = y_train[index]
 def data_prep(image):
     # image = np.array(image)
     noise = np.array(np.random.random((71,71,1))*200, dtype='uint8')
+    mean = np.mean(image[:25, :25])
+    if mean == 0:
+        s = np.random.randint(5, 71)
+        noise = np.array(np.random.random((s,s))*255, dtype='uint8')
+        noise = cv2.resize(noise, dsize=(71,71))
+        noise = np.expand_dims(noise, axis=2)
+        
+    image = np.clip(image/2+noise, 0, 255)
     
-    if np.mean(image) < 127:
-        image = np.clip(image+noise, 0, 255)
-    else:
-        image = np.clip(image-noise, 0, 255)
-    
-    image = cv2.GaussianBlur(image,(5,5),0)
+    image = cv2.GaussianBlur(image,(7,7),0)
     image = np.expand_dims(image, axis=2)
     
     return image
@@ -181,14 +182,15 @@ datagen = ImageDataGenerator(
             rescale=1./255,
             validation_split=0.2,
             width_shift_range=0.1,
-            height_shift_range=0.1,
-            shear_range=20,
-            rotation_range=10,
+            height_shift_range=0.05,
+            shear_range=10,
+            rotation_range=15,
             horizontal_flip=False,
             vertical_flip=False,
             zoom_range=(0.8, 1.1),
             fill_mode='reflect',
-            preprocessing_function=data_prep)
+            preprocessing_function=data_prep,
+            )
 
 
 batch_size=64
@@ -197,7 +199,7 @@ epochs = 200
 train_generator = datagen.flow(x_train, y_train, batch_size=batch_size, subset='training')
 test_generator = datagen.flow(x_train, y_train, batch_size=batch_size//4, subset='validation')
 
-history = model.fit(train_generator, steps_per_epoch=32,
+history = model.fit(train_generator, steps_per_epoch=64,
                     validation_data=test_generator, validation_steps=32,
                     epochs=epochs, verbose=1,
                     callbacks=[lr_scheduler])
