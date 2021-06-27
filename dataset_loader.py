@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 x_train_pre = []
 y_train_pre = []
 
-folders = os.listdir("English/fnt")
+folders = os.listdir("English/Fnt")
 
 for d in folders:
-    images = io.ImageCollection("English/fnt/" + d + "/*.png")
+    images = io.ImageCollection("English/Fnt/" + d + "/*.png")
     
     images = list(images)
     
@@ -47,23 +47,16 @@ for image, y in zip(x_train_pre, y_train_pre):
     i = cv2.resize(image, dsize=(71,71))
     
     if y == 36:
-        x_train.append(-(i-255))
-        y_train.append(y)
         x_train.append(i)
         y_train.append(y)
         
         image = image[:, 20:100]
         
     i = cv2.resize(image, dsize=(71,71))
-    
-    x_train.append(-(i-255))
-    y_train.append(y)
+
     x_train.append(i)
     y_train.append(y)
-    
-print('\n',y_train[-1])
-plt.imshow(x_train[-1])
-plt.show()
+
     
 zeros = np.zeros((l, 71, 71))
 x_train.extend(list(zeros))

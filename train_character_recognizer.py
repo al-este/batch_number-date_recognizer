@@ -58,16 +58,17 @@ def net_layer(inputs,
             x = Activation(activation)(x)
     else:
         if batch_normalization:
-            # pass
             x = BatchNormalization()(x)
         if activation is not None:
             x = Activation(activation)(x)
         x = conv(x)
+        
+    # x = GaussianNoise(0.2)(x)
     return x
 
 
 def dense_net(input_shape, depth, num_classes=10, k=1):
-    filters = 32
+    filters = 8
 
     inputs = Input(shape=input_shape)
     x = net_layer(inputs=inputs, conv_first=True, num_filters=filters)
@@ -79,7 +80,7 @@ def dense_net(input_shape, depth, num_classes=10, k=1):
                              activation=None,
                              kernel_size=1
                              )
-            x = Pooling(pool_size=4)(x)
+            x = Pooling(pool_size=2)(x)
 
         y = net_layer(inputs=x,
                        num_filters=filters)
@@ -118,19 +119,16 @@ num_classes = 38
 input_shape = (71,71, 1)
 
 
+# model = dense_net(input_shape=input_shape, num_classes=num_classes, depth=5, k=4)
 
-
-
-model = dense_net(input_shape=input_shape, num_classes=num_classes, depth=3, k=5)
-
-# model = keras.applications.Xception(
-#     include_top=True,
-#     weights=None,
-#     input_tensor=None,
-#     input_shape=input_shape,
-#     pooling=None,
-#     classes=num_classes,
-# )
+model = keras.applications.Xception(
+    include_top=True,
+    weights=None,
+    input_tensor=None,
+    input_shape=input_shape,
+    pooling=None,
+    classes=num_classes,
+)
 
 model.summary()
 
@@ -163,7 +161,7 @@ y_train = y_train[index]
 
 def data_prep(image):
     # image = np.array(image)
-    noise = np.array(np.random.random((71,71,1))*200, dtype='uint8')
+    noise = np.array(np.random.random((71,71,1))*210, dtype='uint8')
     mean = np.mean(image[:25, :25])
     if mean == 0:
         s = np.random.randint(5, 71)
@@ -174,7 +172,10 @@ def data_prep(image):
     image = np.clip(image/2+noise, 0, 255)
     
     image = cv2.GaussianBlur(image,(7,7),0)
-    image = np.expand_dims(image, axis=2)
+    
+    image = np.where(np.array(image, dtype='uint8')<127, 0, 255)
+    
+    image = np.expand_dims(np.array(image, dtype='float32'), axis=2)
     
     return image
 
@@ -189,19 +190,19 @@ datagen = ImageDataGenerator(
             vertical_flip=False,
             zoom_range=(0.8, 1.1),
             fill_mode='reflect',
-            preprocessing_function=data_prep,
+            # preprocessing_function=data_prep,
             )
 
 
 batch_size=64
-epochs = 200
+epochs = 180
 
 train_generator = datagen.flow(x_train, y_train, batch_size=batch_size, subset='training')
 test_generator = datagen.flow(x_train, y_train, batch_size=batch_size//4, subset='validation')
 
 history = model.fit(train_generator, steps_per_epoch=64,
                     validation_data=test_generator, validation_steps=32,
-                    epochs=epochs, verbose=1,
+                    epochs=epochs, verbose=1, workers=4, 
                     callbacks=[lr_scheduler])
 
 model_json = model.to_json()
