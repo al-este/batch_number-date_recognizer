@@ -161,7 +161,8 @@ y_train = y_train[index]
 
 def data_prep(image):
     # image = np.array(image)
-    noise = np.array(np.random.random((71,71,1))*210, dtype='uint8')
+    
+    noise = np.array(np.random.random((71,71,1))*(190*np.random.random()), dtype='uint8')
     mean = np.mean(image[:25, :25])
     if mean == 0:
         s = np.random.randint(5, 71)
@@ -190,7 +191,7 @@ datagen = ImageDataGenerator(
             vertical_flip=False,
             zoom_range=(0.8, 1.1),
             fill_mode='reflect',
-            # preprocessing_function=data_prep,
+            preprocessing_function=data_prep,
             )
 
 
