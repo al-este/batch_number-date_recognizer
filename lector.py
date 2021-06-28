@@ -126,9 +126,9 @@ def read_characters(image):
                     
                 text = ''.join(text)
                 detected_text.append(text)
-                print(text)
+                # print(text)
                 # plot(image)
-                print('------------------------')
+                # print('------------------------')
                 
     return detected_text
 
